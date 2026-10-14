@@ -1,4 +1,4 @@
-# Folder Auto-Tag — Obsidian Plugin Spec
+# Tagging Folder — Obsidian Plugin Spec
 
 Items marked **(default)** were design defaults chosen during planning rather than explicit requirements.
 
@@ -21,7 +21,7 @@ Items marked **(default)** were design defaults chosen during planning rather th
 | When disabling a folder's auto-tagging | Ask / Remove tags / Keep tags | Ask |
 | When a note leaves an auto-tag folder | Ask / Remove tag / Keep tag | Ask |
 
-- While a setting is on **Ask**, its prompt has a **"Don't ask again"** checkbox. Checking it saves the chosen answer to the setting above and shows the note: *"You can change this later in Folder Auto-Tag settings."*
+- While a setting is on **Ask**, its prompt has a **"Don't ask again"** checkbox. Checking it saves the chosen answer to the setting above and shows the note: *"You can change this later in Tagging Folder settings."*
 
 ## Flows
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏷️ Folder Auto-Tag
+# 🏷️ Tagging Folder
 
 **Tag notes automatically based on the folder they live in.**
 
@@ -50,8 +50,8 @@ Whenever tags would be removed, the plugin **asks first**. Tick **Don't ask agai
 <summary><b>Manual install</b></summary>
 
 1. Download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/Dryd33n/obsidian-tagging-folder/releases/latest), or [build them yourself](#-contributing).
-2. Copy them into `<Vault>/.obsidian/plugins/folder-auto-tag/`.
-3. Reload Obsidian and enable **Folder Auto-Tag** in **Settings → Community plugins**.
+2. Copy them into `<Vault>/.obsidian/plugins/tagging-folder/`.
+3. Reload Obsidian and enable **Tagging Folder** in **Settings → Community plugins**.
 
 </details>
 
@@ -88,7 +88,7 @@ Moving a folder of notes gives a **single prompt** for all of them. Closing a pr
 
 ## ⚙️ Settings
 
-Under **Settings → Folder Auto-Tag** you'll find every auto-tag folder, each with **⚙ Edit** and **✕ Disable** buttons, and two behaviour settings:
+Under **Settings → Tagging Folder** you'll find every auto-tag folder, each with **⚙ Edit** and **✕ Disable** buttons, and two behaviour settings:
 
 | Setting | Options | Default |
 | :--- | :--- | :--- |
@@ -134,7 +134,7 @@ npm install
 npm run dev     # rebuild main.js on change
 ```
 
-Copy `main.js`, `manifest.json` and `styles.css` into a **test vault** at `.obsidian/plugins/folder-auto-tag/`, then reload Obsidian.
+Copy `main.js`, `manifest.json` and `styles.css` into a **test vault** at `.obsidian/plugins/tagging-folder/`, then reload Obsidian.
 
 </details>
 

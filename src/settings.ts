@@ -1,12 +1,12 @@
 import { App, PluginSettingTab, Setting, TFolder } from "obsidian";
-import type FolderAutoTagPlugin from "./main";
+import type TaggingFolderPlugin from "./main";
 import { FolderModal } from "./modals";
 import { Policy } from "./rules";
 
-export class FolderAutoTagSettingTab extends PluginSettingTab {
+export class TaggingFolderSettingTab extends PluginSettingTab {
 	constructor(
 		app: App,
-		private plugin: FolderAutoTagPlugin,
+		private plugin: TaggingFolderPlugin,
 	) {
 		super(app, plugin);
 	}
@@ -34,7 +34,7 @@ export class FolderAutoTagSettingTab extends PluginSettingTab {
 			new Setting(containerEl)
 				.setName(rule.folderPath)
 				.setDesc(`#${rule.tag}${rule.includeSubfolders ? " · includes subfolders" : ""}`)
-				.setClass("folder-auto-tag-rule")
+				.setClass("tagging-folder-rule")
 				.addExtraButton((btn) =>
 					btn
 						.setIcon("settings")

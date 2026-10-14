@@ -1,6 +1,6 @@
 {
-  "name": "folder-auto-tag",
-  "version": "0.9.0",
+  "name": "tagging-folder",
+  "version": "0.9.1",
   "description": "Automatically tag notes based on the folder they live in.",
   "main": "main.js",
   "scripts": {

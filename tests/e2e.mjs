@@ -16,11 +16,11 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const vault = path.join(root, "test-vault");
-const userData = path.join(os.tmpdir(), "folder-auto-tag-e2e-userdata");
+const userData = path.join(os.tmpdir(), "tagging-folder-e2e-userdata");
 const port = 9333;
 const obsidianExe =
 	process.env.OBSIDIAN_PATH ?? path.join(process.env.LOCALAPPDATA ?? "", "Obsidian", "Obsidian.exe");
-const PLUGIN_ID = "folder-auto-tag";
+const PLUGIN_ID = "tagging-folder";
 
 // ------------------------------------------------------------------ vault setup
 
@@ -176,7 +176,7 @@ window.__e2e = {
 		return [...set];
 	},
 	all(sel) { return __e2e.docs().flatMap((d) => [...d.querySelectorAll(sel)]); },
-	modals: () => __e2e.all(".modal.folder-auto-tag-modal"),
+	modals: () => __e2e.all(".modal.tagging-folder-modal"),
 	async modal(label = "plugin modal") {
 		return __e2e.waitFor(() => __e2e.modals().at(-1), label);
 	},
@@ -220,7 +220,7 @@ const tests = [
 		__e2e.assert(m.innerText.includes("Auto-tag notes within folder"), "modal title missing");
 		__e2e.assert(m.innerText.includes("Auto-tagging not enabled"), "status should say not enabled");
 		__e2e.assert(!m.innerText.includes("Disable auto-tagging"), "disable button must not show when not enabled");
-		__e2e.setInput(m.querySelector(".folder-auto-tag-input"), "#project");
+		__e2e.setInput(m.querySelector(".tagging-folder-input"), "#project");
 		__e2e.button(m, "Enable").click();
 		await __e2e.waitFor(() => !m.isConnected, "modal to close");
 		await __e2e.expectTags("Projects/alpha.md", ["project"]);
@@ -240,13 +240,13 @@ const tests = [
 		el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2 }));
 		(await __e2e.waitFor(() => [...document.querySelectorAll(".menu-item")].find((i) => i.textContent.trim() === "Auto-tag…"), "menu item")).click();
 		const m = await __e2e.modal();
-		__e2e.setInput(m.querySelector(".folder-auto-tag-input"), "two words");
+		__e2e.setInput(m.querySelector(".tagging-folder-input"), "two words");
 		__e2e.button(m, "Enable").click();
 		await __e2e.sleep(200);
 		__e2e.assert(m.isConnected, "modal should stay open");
-		__e2e.assert(m.querySelector(".folder-auto-tag-error").textContent.includes("spaces"), "missing validation error");
+		__e2e.assert(m.querySelector(".tagging-folder-error").textContent.includes("spaces"), "missing validation error");
 		__e2e.assert(!__e2e.plugin().getRule("Areas"), "rule should not be created");
-		__e2e.setInput(m.querySelector(".folder-auto-tag-input"), "area");
+		__e2e.setInput(m.querySelector(".tagging-folder-input"), "area");
 		__e2e.button(m, "Enable").click();
 		await __e2e.waitFor(() => !m.isConnected, "modal to close");
 		await __e2e.expectTags("Areas/health.md", ["area"]);
@@ -306,7 +306,7 @@ const tests = [
 		await __e2e.move("Projects/Work/new.md", "Projects/new.md");
 		const m = await __e2e.modal("leave prompt");
 		__e2e.assert(m.innerText.includes("#work"), "prompt should name #work: " + m.innerText);
-		const note = m.querySelector(".folder-auto-tag-note");
+		const note = m.querySelector(".tagging-folder-note");
 		__e2e.assert(note && note.style.display === "none", "settings note hidden until checkbox ticked");
 		m.querySelector(".checkbox-container").click();
 		__e2e.assert(note.style.display !== "none", "settings note should show once ticked");
@@ -383,13 +383,13 @@ const tests = [
 		`
 		app.setting.open();
 		app.setting.openTabById("${PLUGIN_ID}");
-		const c = await __e2e.waitFor(() => __e2e.all(".folder-auto-tag-rule")[0]?.closest(".vertical-tab-content"), "settings tab");
-		const names = [...c.querySelectorAll(".folder-auto-tag-rule .setting-item-name")].map((e) => e.textContent);
+		const c = await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule")[0]?.closest(".vertical-tab-content"), "settings tab");
+		const names = [...c.querySelectorAll(".tagging-folder-rule .setting-item-name")].map((e) => e.textContent);
 		__e2e.assert(JSON.stringify(names) === JSON.stringify(["Areas", "Projects", "Projects/Jobs", "Temp"]), "rules listed: " + names);
-		__e2e.assert(c.querySelectorAll(".folder-auto-tag-rule .clickable-icon").length === 8, "expected gear + X per rule");
+		__e2e.assert(c.querySelectorAll(".tagging-folder-rule .clickable-icon").length === 8, "expected gear + X per rule");
 		__e2e.assert(c.querySelectorAll("select:not(.is-measuring)").length === 2, "expected two policy dropdowns");
 		// Gear opens the edit modal for that folder.
-		c.querySelectorAll(".folder-auto-tag-rule")[0].querySelector(".clickable-icon").click();
+		c.querySelectorAll(".tagging-folder-rule")[0].querySelector(".clickable-icon").click();
 		const m = await __e2e.modal("edit modal");
 		__e2e.assert(m.innerText.includes("Auto-tagging enabled (#area)"), "edit modal status: " + m.innerText);
 		__e2e.assert(m.innerText.includes("Disable auto-tagging"), "disable button should show");
@@ -407,7 +407,7 @@ const tests = [
 		const p = __e2e.plugin();
 		p.settings.onLeave = "ask";
 		await __e2e.move("Projects/loose.md", "Inbox/loose.md");
-		const m = await __e2e.waitFor(() => document.querySelector(".modal.folder-auto-tag-modal"), "prompt in the main window");
+		const m = await __e2e.waitFor(() => document.querySelector(".modal.tagging-folder-modal"), "prompt in the main window");
 		__e2e.assert(activeWindow === window, "activeWindow should be restored to the main window");
 		await __e2e.choose("keep");
 		await __e2e.expectTags("Inbox/loose.md", ["project"]);
@@ -473,13 +473,13 @@ const tests = [
 		await p.enableRule({ folderPath: "Projects/Jobs", tag: "project", includeSubfolders: true }, true); // shares tag with parent
 		app.setting.open();
 		app.setting.openTabById("${PLUGIN_ID}");
-		const rows = await __e2e.waitFor(() => __e2e.all(".folder-auto-tag-rule"), "rule rows");
+		const rows = await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule"), "rule rows");
 		const row = rows.find((r) => r.querySelector(".setting-item-name").textContent === "Projects/Jobs");
 		row.querySelectorAll(".clickable-icon")[1].click();
 		await __e2e.sleep(300);
 		__e2e.assert(__e2e.modals().length === 0, "no prompt: Jobs notes still get #project from parent rule");
 		__e2e.assert(!p.getRule("Projects/Jobs"), "rule removed");
-		const rows2 = await __e2e.waitFor(() => __e2e.all(".folder-auto-tag-rule").length === 3 && __e2e.all(".folder-auto-tag-rule"), "list refreshed");
+		const rows2 = await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule").length === 3 && __e2e.all(".tagging-folder-rule"), "list refreshed");
 		rows2.find((r) => r.querySelector(".setting-item-name").textContent === "Projects").querySelectorAll(".clickable-icon")[1].click();
 		const m = await __e2e.modal("disable prompt");
 		__e2e.assert(m.innerText.includes("Remove #project"), m.innerText);

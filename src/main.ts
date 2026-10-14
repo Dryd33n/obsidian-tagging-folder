@@ -11,9 +11,9 @@ import {
 	tagKey,
 	tagsForPath,
 } from "./rules";
-import { FolderAutoTagSettingTab } from "./settings";
+import { TaggingFolderSettingTab } from "./settings";
 
-export interface FolderAutoTagSettings {
+export interface TaggingFolderSettings {
 	rules: FolderRule[];
 	/** What to do with existing tags when a folder's auto-tagging is disabled. */
 	onDisable: Policy;
@@ -21,7 +21,7 @@ export interface FolderAutoTagSettings {
 	onLeave: Policy;
 }
 
-const DEFAULT_SETTINGS: FolderAutoTagSettings = {
+const DEFAULT_SETTINGS: TaggingFolderSettings = {
 	rules: [],
 	onDisable: "ask",
 	onLeave: "ask",
@@ -40,16 +40,16 @@ interface TagChange {
 	remove: string[];
 }
 
-export default class FolderAutoTagPlugin extends Plugin {
-	settings: FolderAutoTagSettings;
-	private settingTab: FolderAutoTagSettingTab;
+export default class TaggingFolderPlugin extends Plugin {
+	settings: TaggingFolderSettings;
+	private settingTab: TaggingFolderSettingTab;
 	private pendingRenames: { file: TAbstractFile; oldPath: string }[] = [];
 	private renameTimer: number | null = null;
 	private recentlyCreated = new Map<TFile, number>();
 
 	async onload() {
 		await this.loadSettings();
-		this.settingTab = new FolderAutoTagSettingTab(this.app, this);
+		this.settingTab = new TaggingFolderSettingTab(this.app, this);
 		this.addSettingTab(this.settingTab);
 
 		this.registerEvent(
@@ -350,8 +350,8 @@ export default class FolderAutoTagPlugin extends Plugin {
 					changed = editFrontmatterTags(fm, add, remove);
 				});
 			} catch (e) {
-				console.error(`Folder Auto-Tag: failed to update ${file.path}`, e);
-				new Notice(`Folder Auto-Tag: couldn't update "${file.path}" (invalid frontmatter?)`);
+				console.error(`Tagging Folder: failed to update ${file.path}`, e);
+				new Notice(`Tagging Folder: couldn't update "${file.path}" (invalid frontmatter?)`);
 				continue;
 			}
 			if (changed) modified++;

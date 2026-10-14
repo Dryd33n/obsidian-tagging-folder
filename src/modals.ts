@@ -1,5 +1,5 @@
 import { App, Modal, Setting, TFolder } from "obsidian";
-import type FolderAutoTagPlugin from "./main";
+import type TaggingFolderPlugin from "./main";
 import { FolderRule, normalizeTag, validateTag } from "./rules";
 
 export interface Choice<T extends string> {
@@ -67,7 +67,7 @@ export class ChoiceModal<T extends string> extends LiveModal {
 
 	onOpen() {
 		const { contentEl } = this;
-		this.modalEl.addClass("folder-auto-tag-modal");
+		this.modalEl.addClass("tagging-folder-modal");
 		this.titleEl.setText(this.opts.title);
 		contentEl.createEl("p", { text: this.opts.message });
 
@@ -80,8 +80,8 @@ export class ChoiceModal<T extends string> extends LiveModal {
 				}),
 			);
 			note = contentEl.createEl("p", {
-				cls: "setting-item-description folder-auto-tag-note",
-				text: "You can change this later in Folder Auto-Tag settings.",
+				cls: "setting-item-description tagging-folder-note",
+				text: "You can change this later in Tagging Folder settings.",
 			});
 			note.hide();
 		}
@@ -113,7 +113,7 @@ export class ChoiceModal<T extends string> extends LiveModal {
 export class FolderModal extends LiveModal {
 	constructor(
 		app: App,
-		private plugin: FolderAutoTagPlugin,
+		private plugin: TaggingFolderPlugin,
 		private folder: TFolder,
 	) {
 		super(app);
@@ -130,13 +130,13 @@ export class FolderModal extends LiveModal {
 	private render() {
 		const { contentEl } = this;
 		contentEl.empty();
-		this.modalEl.addClass("folder-auto-tag-modal");
+		this.modalEl.addClass("tagging-folder-modal");
 		this.titleEl.setText("Auto-tag notes within folder");
 
 		const rule = this.plugin.getRule(this.folder.path);
-		contentEl.createEl("p", { cls: "folder-auto-tag-folder", text: this.folder.path });
+		contentEl.createEl("p", { cls: "tagging-folder-folder", text: this.folder.path });
 		contentEl.createEl("p", {
-			cls: "folder-auto-tag-status " + (rule ? "is-enabled" : "is-disabled"),
+			cls: "tagging-folder-status " + (rule ? "is-enabled" : "is-disabled"),
 			text: rule ? `Auto-tagging enabled (#${rule.tag})` : "Auto-tagging not enabled",
 		});
 
@@ -156,10 +156,10 @@ export class FolderModal extends LiveModal {
 					draft.tag = v;
 					errorEl.setText("");
 				});
-				text.inputEl.addClass("folder-auto-tag-input");
+				text.inputEl.addClass("tagging-folder-input");
 				window.setTimeout(() => text.inputEl.focus(), 0);
 			});
-		errorEl = contentEl.createEl("p", { cls: "folder-auto-tag-error mod-warning" });
+		errorEl = contentEl.createEl("p", { cls: "tagging-folder-error mod-warning" });
 
 		if (!rule) {
 			new Setting(contentEl)

@@ -1,26 +1,26 @@
-.folder-auto-tag-folder {
+.tagging-folder-folder {
 	color: var(--text-muted);
 	font-family: var(--font-monospace);
 	margin-top: 0;
 }
 
-.folder-auto-tag-status.is-enabled {
+.tagging-folder-status.is-enabled {
 	color: var(--text-success);
 }
 
-.folder-auto-tag-status.is-disabled {
+.tagging-folder-status.is-disabled {
 	color: var(--text-muted);
 }
 
-.folder-auto-tag-error:empty {
+.tagging-folder-error:empty {
 	display: none;
 }
 
-.folder-auto-tag-error {
+.tagging-folder-error {
 	color: var(--text-error);
 	margin: 0;
 }
 
-.folder-auto-tag-note {
+.tagging-folder-note {
 	margin-top: 0;
 }
