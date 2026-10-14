@@ -1,0 +1,26 @@
+{
+  "name": "folder-auto-tag",
+  "version": "1.0.0",
+  "description": "Automatically tag notes based on the folder they live in.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "node --experimental-strip-types --no-warnings --test tests/unit.test.ts",
+    "test:e2e": "npm run build && node tests/e2e.mjs"
+  },
+  "author": "Dryden Bryson",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dryd33n/obsidian-tagging-folder.git"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "builtin-modules": "3.3.0",
+    "esbuild": "0.20.2",
+    "obsidian": "latest",
+    "tslib": "2.6.2",
+    "typescript": "5.4.5"
+  }
+}

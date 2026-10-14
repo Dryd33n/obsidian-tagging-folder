@@ -1,0 +1,26 @@
+.folder-auto-tag-folder {
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+	margin-top: 0;
+}
+
+.folder-auto-tag-status.is-enabled {
+	color: var(--text-success);
+}
+
+.folder-auto-tag-status.is-disabled {
+	color: var(--text-muted);
+}
+
+.folder-auto-tag-error:empty {
+	display: none;
+}
+
+.folder-auto-tag-error {
+	color: var(--text-error);
+	margin: 0;
+}
+
+.folder-auto-tag-note {
+	margin-top: 0;
+}

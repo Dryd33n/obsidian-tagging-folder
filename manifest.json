@@ -1,0 +1,10 @@
+{
+  "id": "folder-auto-tag",
+  "name": "Folder Auto-Tag",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "Automatically tag notes based on the folder they live in.",
+  "author": "Dryden Bryson",
+  "isDesktopOnly": false,
+  "authorUrl": "https://github.com/Dryd33n"
+}
