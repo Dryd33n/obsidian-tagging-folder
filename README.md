@@ -4,7 +4,7 @@
 
 **Tag notes automatically based on the folder they live in.**
 
-[![Obsidian](https://img.shields.io/badge/Obsidian-1.4%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
+[![Obsidian](https://img.shields.io/badge/Obsidian-1.4.4%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
 [![Latest release](https://img.shields.io/github/v/release/Dryd33n/obsidian-tagging-folder?color=7C3AED&label=release)](https://github.com/Dryd33n/obsidian-tagging-folder/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
