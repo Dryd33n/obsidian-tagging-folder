@@ -8,6 +8,22 @@ export interface FolderRule {
 
 export type Policy = "ask" | "remove" | "keep";
 
+export function isPolicy(value: unknown): value is Policy {
+	return value === "ask" || value === "remove" || value === "keep";
+}
+
+/** Validates a rule loaded from saved data. */
+export function isRule(value: unknown): value is FolderRule {
+	if (typeof value !== "object" || value === null) return false;
+	const r = value as Record<string, unknown>;
+	return typeof r.folderPath === "string" && typeof r.tag === "string" && typeof r.includeSubfolders === "boolean";
+}
+
+/** Tag values YAML can produce as plain scalars (e.g. `tags: 2024` parses as a number). */
+function isScalar(value: unknown): value is string | number {
+	return typeof value === "string" || typeof value === "number";
+}
+
 /** Strip a leading "#" and surrounding whitespace. */
 export function normalizeTag(input: string): string {
 	return input.trim().replace(/^#+/, "").trim();
@@ -84,10 +100,9 @@ export function readFrontmatterTags(fm: Record<string, unknown>): string[] {
 	const out: string[] = [];
 	for (const key of ["tags", "tag"]) {
 		const value = fm[key];
-		if (value == null) continue;
-		const items = Array.isArray(value) ? value : String(value).split(/[,\s]+/);
+		const items: unknown[] = Array.isArray(value) ? value : isScalar(value) ? String(value).split(/[,\s]+/) : [];
 		for (const item of items) {
-			if (item == null) continue;
+			if (!isScalar(item)) continue;
 			const t = normalizeTag(String(item));
 			if (t) out.push(t);
 		}

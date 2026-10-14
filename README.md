@@ -4,8 +4,9 @@
 
 **Tag notes automatically based on the folder they live in.**
 
-[![Obsidian](https://img.shields.io/badge/Obsidian-1.4.4%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
+[![Obsidian](https://img.shields.io/badge/Obsidian-1.13%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
 [![Latest release](https://img.shields.io/github/v/release/Dryd33n/obsidian-tagging-folder?color=7C3AED&label=release)](https://github.com/Dryd33n/obsidian-tagging-folder/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/Dryd33n/obsidian-tagging-folder/lint.yml?branch=master&label=build)](https://github.com/Dryd33n/obsidian-tagging-folder/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [Features](#-features) · [Install](#-installation) · [Usage](#-usage) · [Settings](#%EF%B8%8F-settings) · [Limitations](#%EF%B8%8F-limitations) · [Contributing](#-contributing)
@@ -45,6 +46,9 @@
 Whenever tags would be removed, the plugin **asks first**. Tick **Don't ask again** to make your answer the default, and change it any time in settings.
 
 ## 📦 Installation
+
+> [!IMPORTANT]
+> Requires Obsidian 1.13 or later.
 
 <details open>
 <summary><b>Manual install</b></summary>
@@ -88,7 +92,7 @@ Moving a folder of notes gives a **single prompt** for all of them. Closing a pr
 
 ## ⚙️ Settings
 
-Under **Settings → Tagging Folder** you'll find every auto-tag folder, each with **⚙ Edit** and **✕ Disable** buttons, and two behaviour settings:
+Under **Settings → Tagging Folder** you'll find every auto-tag folder, each with an **⚙ Edit** button and a **Delete** button that disables auto-tagging for that folder, and two behaviour settings. All of them show up in Obsidian's settings search.
 
 | Setting | Options | Default |
 | :--- | :--- | :--- |
@@ -142,11 +146,12 @@ Copy `main.js`, `manifest.json` and `styles.css` into a **test vault** at `.obsi
 <summary><b>Testing</b></summary>
 
 ```bash
+npm run lint       # Obsidian's plugin lint rules
 npm test           # unit tests for the tagging logic
 npm run test:e2e   # end-to-end tests in a real Obsidian instance
 ```
 
-The end-to-end suite builds a fresh `test-vault/`, launches an **isolated** Obsidian instance with its own data folder (your normal Obsidian and vaults are untouched), runs every flow through the real UI and checks the notes on disk. It uses the newest Obsidian version your install has downloaded.
+The end-to-end suite builds a fresh `test-vault/`, launches an **isolated** Obsidian instance with its own data folder (your normal Obsidian and vaults are untouched), runs every flow through the real UI and checks the notes on disk. It uses the newest Obsidian version your install has downloaded; set `OBSIDIAN_ASAR=` (empty) to test the older version bundled with the installer instead.
 
 | Variable | Effect |
 | :--- | :--- |
@@ -161,10 +166,17 @@ The end-to-end suite builds a fresh `test-vault/`, launches an **isolated** Obsi
 <summary><b>Pull request checklist</b></summary>
 
 - [ ] Branch from `master` and keep each PR focused on one change.
-- [ ] `npm run build`, `npm test` and `npm run test:e2e` pass.
+- [ ] `npm run lint`, `npm run build`, `npm test` and `npm run test:e2e` pass.
 - [ ] The PR describes what you tested in Obsidian.
 - [ ] No `main.js` or other build output committed.
 - [ ] Any UI text uses sentence case.
+
+</details>
+
+<details>
+<summary><b>Releasing</b></summary>
+
+Bump `version` in `manifest.json` and `package.json`, add the version to `versions.json`, then push a tag with the same version (no `v` prefix). CI builds the plugin, attests the release files and creates a draft release for you to publish.
 
 </details>
 

@@ -6,7 +6,7 @@ export interface Choice<T extends string> {
 	label: string;
 	value: T;
 	cta?: boolean;
-	warning?: boolean;
+	destructive?: boolean;
 }
 
 export interface ChoiceResult<T extends string> {
@@ -81,7 +81,7 @@ export class ChoiceModal<T extends string> extends LiveModal {
 			);
 			note = contentEl.createEl("p", {
 				cls: "setting-item-description tagging-folder-note",
-				text: "You can change this later in Tagging Folder settings.",
+				text: "You can change this later in the plugin settings.",
 			});
 			note.hide();
 		}
@@ -91,7 +91,7 @@ export class ChoiceModal<T extends string> extends LiveModal {
 			buttons.addButton((btn) => {
 				btn.setButtonText(choice.label).onClick(() => this.finish(choice.value));
 				if (choice.cta) btn.setCta();
-				if (choice.warning) btn.setWarning();
+				if (choice.destructive) btn.setDestructive();
 				btn.buttonEl.dataset.choice = choice.value;
 			});
 		}
@@ -152,7 +152,7 @@ export class FolderModal extends LiveModal {
 			.setName("Tag name")
 			.setDesc("Added to the tags property of each note.")
 			.addText((text) => {
-				text.setPlaceholder("e.g. project").setValue(draft.tag).onChange((v) => {
+				text.setPlaceholder("Enter a tag").setValue(draft.tag).onChange((v) => {
 					draft.tag = v;
 					errorEl.setText("");
 				});
@@ -212,7 +212,7 @@ export class FolderModal extends LiveModal {
 			.addButton((btn) =>
 				btn
 					.setButtonText("Disable auto-tagging")
-					.setWarning()
+					.setDestructive()
 					.onClick(async () => {
 						if (await this.plugin.disableRule(rule)) this.close();
 					}),

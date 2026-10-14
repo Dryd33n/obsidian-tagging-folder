@@ -1,10 +1,13 @@
-import { Notice, Plugin, TAbstractFile, TFile, TFolder } from "obsidian";
+import { Notice, Plugin, TAbstractFile, TFile, TFolder, Vault } from "obsidian";
 import { ChoiceModal, FolderModal } from "./modals";
 import {
 	editFrontmatterTags,
 	FolderRule,
 	isInScope,
+	isPolicy,
+	isRule,
 	Policy,
+	readFrontmatterTags,
 	removeRulesUnder,
 	renameRuleFolders,
 	tagDifference,
@@ -81,9 +84,12 @@ export default class TaggingFolderPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		const data = (await this.loadData()) ?? {};
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-		this.settings.rules = (this.settings.rules ?? []).map((r) => ({ ...r }));
+		const data = ((await this.loadData()) ?? {}) as Partial<Record<keyof TaggingFolderSettings, unknown>>;
+		this.settings = {
+			rules: Array.isArray(data.rules) ? data.rules.filter(isRule).map((r) => ({ ...r })) : [],
+			onDisable: isPolicy(data.onDisable) ? data.onDisable : DEFAULT_SETTINGS.onDisable,
+			onLeave: isPolicy(data.onLeave) ? data.onLeave : DEFAULT_SETTINGS.onLeave,
+		};
 	}
 
 	async saveSettings() {
@@ -115,7 +121,7 @@ export default class TaggingFolderPlugin extends Plugin {
 	/** Returns false if the user cancelled. */
 	async disableRule(rule: FolderRule): Promise<boolean> {
 		const newRules = this.settings.rules.filter((r) => r !== rule);
-		const lost = this.diff(this.settings.rules, newRules).filter((c) => c.remove.length);
+		const lost = this.diff(this.settings.rules, newRules, rule.folderPath).filter((c) => c.remove.length);
 
 		let removeTags = false;
 		if (lost.length) {
@@ -146,7 +152,7 @@ export default class TaggingFolderPlugin extends Plugin {
 
 		const updated = { ...draft, folderPath: rule.folderPath };
 		const newRules = this.settings.rules.map((r) => (r === rule ? updated : r));
-		const changes = this.diff(this.settings.rules, newRules);
+		const changes = this.diff(this.settings.rules, newRules, rule.folderPath);
 
 		// Notes that keep this folder in scope but lose the old tag are losing it because of the rename.
 		const renamed = changes.filter((c) => c.remove.length && isInScope(c.file.path, updated));
@@ -195,7 +201,7 @@ export default class TaggingFolderPlugin extends Plugin {
 		if (!isMarkdown(file)) return;
 		if (!tagsForPath(file.path, this.settings.rules).length) return;
 		this.recentlyCreated.set(file, Date.now());
-		window.setTimeout(() => this.ensureTags(file), CREATE_DELAY_MS);
+		window.setTimeout(() => void this.ensureTags(file), CREATE_DELAY_MS);
 	}
 
 	/** Re-add tags if something (typically a template) overwrote a freshly created note. */
@@ -250,7 +256,7 @@ export default class TaggingFolderPlugin extends Plugin {
 			const oldTags = tagsForPath(oldPath, before);
 			const newTags = tagsForPath(file.path, this.settings.rules);
 			const add = tagDifference(newTags, oldTags);
-			const remove = tagDifference(oldTags, newTags);
+			const remove = this.presentTags(file, tagDifference(oldTags, newTags));
 			if (add.length || remove.length) changes.push({ file, add, remove });
 		}
 		if (!changes.length) return;
@@ -270,18 +276,41 @@ export default class TaggingFolderPlugin extends Plugin {
 
 	// ---------------------------------------------------------------- helpers
 
-	private filesInScope(rule: FolderRule): TFile[] {
-		return this.app.vault.getMarkdownFiles().filter((f) => isInScope(f.path, rule));
+	/**
+	 * The subset of `tags` the note actually carries. Removal is only offered for tags that are
+	 * present, so prompts never count notes that wouldn't change (e.g. a folder enabled without
+	 * tagging existing notes, or a tag the user already removed by hand).
+	 */
+	private presentTags(file: TFile, tags: string[]): string[] {
+		if (!tags.length) return tags;
+		const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+		const have = new Set(readFrontmatterTags(fm ? { ...(fm as Record<string, unknown>) } : {}).map(tagKey));
+		return tags.filter((t) => have.has(tagKey(t)));
 	}
 
-	/** Per-note tag changes implied by switching from one rule set to another. */
-	private diff(oldRules: FolderRule[], newRules: FolderRule[]): TagChange[] {
+	/** Markdown notes inside a folder, at any depth. */
+	private notesUnder(folderPath: string): TFile[] {
+		const folder = this.app.vault.getFolderByPath(folderPath);
+		const out: TFile[] = [];
+		if (folder) Vault.recurseChildren(folder, (f) => isMarkdown(f) && out.push(f));
+		return out;
+	}
+
+	private filesInScope(rule: FolderRule): TFile[] {
+		return this.notesUnder(rule.folderPath).filter((f) => isInScope(f.path, rule));
+	}
+
+	/**
+	 * Per-note tag changes implied by switching from one rule set to another.
+	 * Only the rule for `folderPath` may differ between the two sets, so only notes under it can change.
+	 */
+	private diff(oldRules: FolderRule[], newRules: FolderRule[], folderPath: string): TagChange[] {
 		const out: TagChange[] = [];
-		for (const file of this.app.vault.getMarkdownFiles()) {
+		for (const file of this.notesUnder(folderPath)) {
 			const oldTags = tagsForPath(file.path, oldRules);
 			const newTags = tagsForPath(file.path, newRules);
 			const add = tagDifference(newTags, oldTags);
-			const remove = tagDifference(oldTags, newTags);
+			const remove = this.presentTags(file, tagDifference(oldTags, newTags));
 			if (add.length || remove.length) out.push({ file, add, remove });
 		}
 		return out;
@@ -341,12 +370,12 @@ export default class TaggingFolderPlugin extends Plugin {
 			if (!add.length && !remove.length) continue;
 			// Skip the write entirely when the cached frontmatter shows nothing would change.
 			const cached = this.app.metadataCache.getFileCache(file)?.frontmatter;
-			if (cached && !editFrontmatterTags(structuredClone(cached), add, remove)) continue;
+			if (cached && !editFrontmatterTags({ ...(cached as Record<string, unknown>) }, add, remove)) continue;
 			if (!cached && !add.length) continue;
 
 			let changed = false;
 			try {
-				await this.app.fileManager.processFrontMatter(file, (fm) => {
+				await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 					changed = editFrontmatterTags(fm, add, remove);
 				});
 			} catch (e) {

@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
 	editFrontmatterTags,
+	isPolicy,
+	isRule,
 	normalizeTag,
 	readFrontmatterTags,
 	removeRulesUnder,
@@ -102,4 +104,24 @@ test("editFrontmatterTags merges legacy tag key when writing", () => {
 	const fm: Record<string, unknown> = { tag: "old" };
 	assert.equal(editFrontmatterTags(fm, ["new"], []), true);
 	assert.deepEqual(fm, { tags: ["old", "new"] });
+});
+
+test("readFrontmatterTags accepts numeric YAML tags and ignores non-scalars", () => {
+	assert.deepEqual(readFrontmatterTags({ tags: 2024 }), ["2024"]);
+	assert.deepEqual(readFrontmatterTags({ tags: ["a", 7, { x: 1 }, null, ["nested"]] }), ["a", "7"]);
+	assert.deepEqual(readFrontmatterTags({ tags: { a: 1 } }), []);
+	assert.deepEqual(readFrontmatterTags({ tags: true }), []);
+});
+
+test("isPolicy", () => {
+	for (const v of ["ask", "remove", "keep"]) assert.equal(isPolicy(v), true);
+	for (const v of ["Ask", "", null, undefined, 1, {}]) assert.equal(isPolicy(v), false);
+});
+
+test("isRule validates saved rules", () => {
+	assert.equal(isRule({ folderPath: "A", tag: "a", includeSubfolders: true }), true);
+	assert.equal(isRule({ folderPath: "A", tag: "a" }), false);
+	assert.equal(isRule({ folderPath: 1, tag: "a", includeSubfolders: true }), false);
+	assert.equal(isRule(null), false);
+	assert.equal(isRule("A"), false);
 });

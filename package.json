@@ -1,13 +1,14 @@
 {
   "name": "tagging-folder",
-  "version": "0.9.1",
+  "version": "1.0.0",
   "description": "Automatically tag notes based on the folder they live in.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "test": "node --experimental-strip-types --no-warnings --test tests/unit.test.ts",
-    "test:e2e": "npm run build && node tests/e2e.mjs"
+    "test:e2e": "npm run build && node tests/e2e.mjs",
+    "lint": "eslint ."
   },
   "author": "Dryden Bryson",
   "license": "MIT",
@@ -16,11 +17,16 @@
     "url": "https://github.com/Dryd33n/obsidian-tagging-folder.git"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/node": "^20.11.0",
-    "builtin-modules": "3.3.0",
     "esbuild": "0.20.2",
-    "obsidian": "latest",
+    "eslint": "^9.39.5",
+    "eslint-plugin-obsidianmd": "^0.4.2",
+    "globals": "^17.13.0",
+    "jiti": "^2.7.0",
+    "obsidian": "^1.14.4",
     "tslib": "2.6.2",
-    "typescript": "5.4.5"
+    "typescript": "5.4.5",
+    "typescript-eslint": "^8.71.2"
   }
 }

@@ -1,8 +1,8 @@
 {
   "id": "tagging-folder",
   "name": "Tagging Folder",
-  "version": "0.9.1",
-  "minAppVersion": "1.4.4",
+  "version": "1.0.0",
+  "minAppVersion": "1.13.0",
   "description": "Automatically tag notes based on the folder they live in.",
   "author": "Dryden Bryson",
   "isDesktopOnly": false,

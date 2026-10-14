@@ -21,6 +21,7 @@ const port = 9333;
 const obsidianExe =
 	process.env.OBSIDIAN_PATH ?? path.join(process.env.LOCALAPPDATA ?? "", "Obsidian", "Obsidian.exe");
 const PLUGIN_ID = "tagging-folder";
+const TEST_TIMEOUT_MS = 30_000;
 
 // ------------------------------------------------------------------ vault setup
 
@@ -200,6 +201,22 @@ window.__e2e = {
 	async move(from, to) {
 		await app.fileManager.renameFile(app.vault.getAbstractFileByPath(from), to);
 	},
+	rowButton(row, label) {
+		const b = row.querySelector('.clickable-icon[aria-label="' + label + '"]');
+		if (!b) throw new Error("no '" + label + "' button on row " + row.innerText);
+		return b;
+	},
+	async settingsSearch(query) {
+		const doc = app.setting.activeTab.containerEl.ownerDocument;
+		const input = [...doc.querySelectorAll("input")].find((i) => /search/i.test(i.placeholder));
+		input.value = query;
+		input.dispatchEvent(new Event("input", { bubbles: true }));
+		await __e2e.sleep(600);
+		const text = doc.body.innerText;
+		input.value = "";
+		input.dispatchEvent(new Event("input", { bubbles: true }));
+		return text;
+	},
 	assert(cond, msg) { if (!cond) throw new Error(msg); },
 	closeAllModals() { __e2e.all(".modal-container:not(:has(.mod-settings))").forEach((c) => c.querySelector(".modal-close-button, .modal-header-button")?.click()); },
 };
@@ -348,6 +365,22 @@ const tests = [
 		`,
 	],
 	[
+		"Moving out a note whose tag was already removed by hand doesn't prompt",
+		`
+		// Uses an older note: brand-new notes are protected for 10s and would get the tag re-added.
+		__e2e.plugin().settings.onLeave = "ask";
+		await __e2e.expectTags("Projects/alpha.md", ["project"]);
+		await app.fileManager.processFrontMatter(app.vault.getAbstractFileByPath("Projects/alpha.md"), (fm) => { delete fm.tags; });
+		await __e2e.waitFor(() => !app.metadataCache.getCache("Projects/alpha.md")?.frontmatter?.tags, "cache to drop tags");
+		await __e2e.move("Projects/alpha.md", "Inbox/alpha.md");
+		await __e2e.sleep(900);
+		__e2e.assert(__e2e.modals().length === 0, "no prompt expected: the note no longer has #project");
+		await __e2e.expectTags("Inbox/alpha.md", []);
+		await __e2e.move("Inbox/alpha.md", "Projects/alpha.md"); // moving back in re-tags it
+		await __e2e.expectTags("Projects/alpha.md", ["project"]);
+		`,
+	],
+	[
 		"Bulk move: moving a folder of 3 notes out shows ONE prompt",
 		`
 		let maxOpen = 0;
@@ -379,21 +412,75 @@ const tests = [
 		`,
 	],
 	[
-		"Flow 6: settings tab lists rules with edit/disable buttons and both policy dropdowns",
+		"Flow 6: settings tab lists rules with Edit/Delete buttons and both policy dropdowns (declarative API)",
 		`
 		app.setting.open();
 		app.setting.openTabById("${PLUGIN_ID}");
 		const c = await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule")[0]?.closest(".vertical-tab-content"), "settings tab");
+		const tab = app.setting.activeTab;
+		__e2e.assert(tab.settingItems?.length === 2, "tab should render from getSettingDefinitions (list + group), got " + tab.settingItems?.length);
+		__e2e.assert(c.querySelector(".setting-group.mod-list.tagging-folder-rules"), "rules should render as a declarative list");
 		const names = [...c.querySelectorAll(".tagging-folder-rule .setting-item-name")].map((e) => e.textContent);
 		__e2e.assert(JSON.stringify(names) === JSON.stringify(["Areas", "Projects", "Projects/Jobs", "Temp"]), "rules listed: " + names);
-		__e2e.assert(c.querySelectorAll(".tagging-folder-rule .clickable-icon").length === 8, "expected gear + X per rule");
+		for (const row of c.querySelectorAll(".tagging-folder-rule")) { __e2e.rowButton(row, "Edit"); __e2e.rowButton(row, "Delete"); }
 		__e2e.assert(c.querySelectorAll("select:not(.is-measuring)").length === 2, "expected two policy dropdowns");
 		// Gear opens the edit modal for that folder.
-		c.querySelectorAll(".tagging-folder-rule")[0].querySelector(".clickable-icon").click();
+		__e2e.rowButton(c.querySelectorAll(".tagging-folder-rule")[0], "Edit").click();
 		const m = await __e2e.modal("edit modal");
 		__e2e.assert(m.innerText.includes("Auto-tagging enabled (#area)"), "edit modal status: " + m.innerText);
 		__e2e.assert(m.innerText.includes("Disable auto-tagging"), "disable button should show");
 		m.querySelector(".modal-close-button, .modal-header-button").click();
+		app.setting.close();
+		`,
+	],
+	[
+		"Flow 6: plugin settings appear in Obsidian's settings search",
+		`
+		app.setting.open();
+		app.setting.openTabById("editor"); // search from another tab so a hit can only come from the index
+		await __e2e.waitFor(() => app.setting.activeTab?.id === "editor", "editor tab");
+		const hit = await __e2e.settingsSearch("leaves an auto-tag");
+		__e2e.assert(hit.includes("Tagging Folder") && hit.includes("When a note leaves an auto-tag folder"), "behaviour setting not found by search");
+		const miss = await __e2e.settingsSearch("zzqx-no-such-setting");
+		__e2e.assert(!miss.includes("When a note leaves"), "unrelated query should not match");
+		app.setting.close();
+		`,
+	],
+	[
+		"Flow 6: changing a behaviour dropdown saves through the declarative control",
+		`
+		const p = __e2e.plugin();
+		const before = p.settings.onLeave;
+		app.setting.open();
+		app.setting.openTabById("${PLUGIN_ID}");
+		const c = await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule")[0]?.closest(".vertical-tab-content"), "settings tab");
+		const row = [...c.querySelectorAll(".setting-item")].find((r) => r.innerText.includes("When a note leaves an auto-tag folder"));
+		const select = row.querySelector("select:not(.is-measuring)");
+		__e2e.assert(select.value === before, "dropdown should show current value " + before + ", got " + select.value);
+		select.value = "keep";
+		select.dispatchEvent(new Event("change", { bubbles: true }));
+		await __e2e.waitFor(() => p.settings.onLeave === "keep", "onLeave saved as keep");
+		const saved = JSON.parse(await app.vault.adapter.read(".obsidian/plugins/${PLUGIN_ID}/data.json"));
+		__e2e.assert(saved.onLeave === "keep", "keep not persisted to data.json");
+		select.value = before;
+		select.dispatchEvent(new Event("change", { bubbles: true }));
+		await __e2e.waitFor(() => p.settings.onLeave === before, "onLeave restored");
+		app.setting.close();
+		`,
+	],
+	[
+		"Flow 6: settings list updates live when a folder is enabled elsewhere",
+		`
+		const p = __e2e.plugin();
+		app.setting.open();
+		app.setting.openTabById("${PLUGIN_ID}");
+		await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule").length === 4, "4 rows");
+		await p.enableRule({ folderPath: "Inbox", tag: "inbox", includeSubfolders: false }, false);
+		await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule").some((r) => r.innerText.includes("#inbox")), "new row to appear");
+		// Enabled without tagging existing notes, so no note carries #inbox: disabling must not prompt.
+		await p.disableRule(p.getRule("Inbox"));
+		__e2e.assert(__e2e.modals().length === 0, "no prompt expected when no note carries the tag");
+		await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule").length === 4, "row to disappear");
 		app.setting.close();
 		`,
 	],
@@ -467,7 +554,7 @@ const tests = [
 		`,
 	],
 	[
-		"Flow 6: X in settings (ask) → Remove strips tags; tags still owed by another rule stay",
+		"Flow 6: Delete in settings (ask) → Remove strips tags; tags still owed by another rule stay",
 		`
 		const p = __e2e.plugin();
 		await p.enableRule({ folderPath: "Projects/Jobs", tag: "project", includeSubfolders: true }, true); // shares tag with parent
@@ -475,12 +562,12 @@ const tests = [
 		app.setting.openTabById("${PLUGIN_ID}");
 		const rows = await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule"), "rule rows");
 		const row = rows.find((r) => r.querySelector(".setting-item-name").textContent === "Projects/Jobs");
-		row.querySelectorAll(".clickable-icon")[1].click();
+		__e2e.rowButton(row, "Delete").click();
 		await __e2e.sleep(300);
 		__e2e.assert(__e2e.modals().length === 0, "no prompt: Jobs notes still get #project from parent rule");
 		__e2e.assert(!p.getRule("Projects/Jobs"), "rule removed");
 		const rows2 = await __e2e.waitFor(() => __e2e.all(".tagging-folder-rule").length === 3 && __e2e.all(".tagging-folder-rule"), "list refreshed");
-		rows2.find((r) => r.querySelector(".setting-item-name").textContent === "Projects").querySelectorAll(".clickable-icon")[1].click();
+		__e2e.rowButton(rows2.find((r) => r.querySelector(".setting-item-name").textContent === "Projects"), "Delete").click();
 		const m = await __e2e.modal("disable prompt");
 		__e2e.assert(m.innerText.includes("Remove #project"), m.innerText);
 		await __e2e.choose("remove", { remember: true });
@@ -509,6 +596,42 @@ const tests = [
 		__e2e.assert(p.settings.onDisable === "remove" && p.settings.onLeave === "remove", "policies persisted");
 		await app.vault.create("Areas/after-reload.md", "x\\n");
 		await __e2e.expectTags("Areas/after-reload.md", ["region"]); // #zone was only kept on existing notes
+		`,
+	],
+	[
+		"Disabling a folder only touches notes inside it (same tag elsewhere is left alone)",
+		`
+		const p = __e2e.plugin();
+		p.settings.onDisable = "remove";
+		await app.vault.create("Inbox/manual.md", "---\\ntags:\\n  - region\\n---\\nhand-tagged\\n");
+		await __e2e.expectTags("Inbox/manual.md", ["region"]);
+		await p.disableRule(p.getRule("Areas"));
+		await __e2e.expectTags("Areas/health.md", ["zone"]);
+		await __e2e.expectTags("Inbox/manual.md", ["region"]);
+		`,
+	],
+	[
+		"Corrupted saved settings load safely (bad rules dropped, bad policies reset)",
+		`
+		const dataPath = ".obsidian/plugins/${PLUGIN_ID}/data.json";
+		await app.plugins.disablePlugin("${PLUGIN_ID}");
+		await app.vault.adapter.write(dataPath, JSON.stringify({
+			rules: [
+				{ folderPath: "Areas", tag: "area", includeSubfolders: true },
+				{ folderPath: 42, tag: "bad" },
+				null,
+				"nope",
+				{ folderPath: "Inbox", tag: "inbox" },
+			],
+			onDisable: "explode",
+			onLeave: 7,
+		}));
+		await app.plugins.enablePlugin("${PLUGIN_ID}");
+		const p = await __e2e.waitFor(() => __e2e.plugin()?.settings && __e2e.plugin(), "plugin reloaded");
+		__e2e.assert(JSON.stringify(p.settings.rules) === JSON.stringify([{ folderPath: "Areas", tag: "area", includeSubfolders: true }]), "rules: " + JSON.stringify(p.settings.rules));
+		__e2e.assert(p.settings.onDisable === "ask" && p.settings.onLeave === "ask", "policies should reset to ask");
+		await app.vault.create("Areas/after-corrupt.md", "x\\n");
+		await __e2e.expectTags("Areas/after-corrupt.md", ["area"]);
 		`,
 	],
 ];
@@ -568,7 +691,8 @@ async function main() {
 				console.log(`      [activeDocument before test: ${where}]`);
 			}
 			try {
-				await cdp.eval(body);
+				// A test stuck on an unexpected prompt fails instead of hanging the whole run.
+				await Promise.race([cdp.eval(body), sleep(TEST_TIMEOUT_MS).then(() => { throw new Error(`timed out after ${TEST_TIMEOUT_MS / 1000}s (unexpected prompt?)`); })]);
 				console.log(`  ✔ ${name}`);
 			} catch (e) {
 				failures++;

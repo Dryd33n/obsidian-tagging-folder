@@ -54,12 +54,12 @@ This one rule covers flow 4 (between auto-tag folders), flow 5 (from a normal fo
 **Bulk moves**: moving a folder with 50 notes fires 50 rename events. Batch events over ~500 ms and show **one** prompt per batch, e.g. "12 notes left #project. Remove the tag?" **(default)**.
 
 ### 6. Settings tab
-- Lists every rule: folder path, `#tag`, ⚙, ✕
+- Lists every rule: folder path, `#tag`, ⚙ Edit, Delete
 - ⚙ opens the same edit modal as flow 2. Fields:
   - **Tag name**. If it changed, ask: "Replace #old with #new on existing notes, or keep #old and add #new?" [Replace] [Add] [Cancel]
   - **Include subfolders**. Turning it **off** counts as subfolder notes leaving scope (follows the *leaves folder* setting). Turning it **on** tags the subfolder notes **(default)**.
   - **Re-apply tag to existing notes** button (replaces the "tag existing items" checkbox, which only makes sense at creation time) **(default)**.
-- ✕ runs the same disable logic as flow 2, honouring the *disable* setting.
+- Delete runs the same disable logic as flow 2, honouring the *disable* setting.
 - Below the list are the two global settings from the table above.
 
 ## Folder lifecycle (not in the original plan)
